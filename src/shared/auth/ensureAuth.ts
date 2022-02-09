@@ -15,7 +15,7 @@ export class EnsureAuth implements NestMiddleware {
         const decoded = verify(token, process.env.JWT_SECRET_KEY as string);
 
         const { sub } = decoded;
-
+        
         (req as any).user = {
             _id: sub,
         };

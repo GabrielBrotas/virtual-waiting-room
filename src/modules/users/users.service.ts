@@ -58,7 +58,7 @@ export class UsersService {
       success: true,
       data: {
         user,
-        token: await this.authProvider.generateToken(user.id),
+        token: await this.authProvider.generateToken(user._id),
       },
     };
   }
