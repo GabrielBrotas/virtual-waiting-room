@@ -1,16 +1,15 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { TokenProvider } from './shared/token/token-provider';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+
+import { TokenProvider } from './shared/token/token-provider';
 import { RoomsModule } from './modules/rooms/rooms.module';
 import { UsersModule } from './modules/users/users.module';
-import { EnsureAuth } from './shared/auth/ensureAuth';
-import { MoviesController } from './modules/movies/movies.controller';
-import { MoviesService } from './modules/movies/movies.service';
 import { MoviesModule } from './modules/movies/movies.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), RoomsModule, UsersModule, MoviesModule],
-  controllers: [MoviesController],
-  providers: [TokenProvider, MoviesService],
+  imports: [ConfigModule.forRoot(), RoomsModule, MoviesModule, UsersModule, ],
+  controllers: [],
+  providers: [TokenProvider],
+  exports: []
 })
 export class AppModule {}
