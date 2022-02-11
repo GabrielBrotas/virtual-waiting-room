@@ -7,9 +7,9 @@ import { UsersModule } from './modules/users/users.module';
 import { MoviesModule } from './modules/movies/movies.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(), RoomsModule, MoviesModule, UsersModule, ],
+  imports: [ConfigModule.forRoot(), RoomsModule, MoviesModule, UsersModule],
   controllers: [],
   providers: [TokenProvider],
-  exports: []
+  exports: [],
 })
 export class AppModule {}

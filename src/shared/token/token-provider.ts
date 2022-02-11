@@ -1,9 +1,9 @@
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 export class TokenProvider {
-  generateShaToken() {
+  generateShaToken(value: string) {
     const sha256 = crypto.createHash('sha256');
-    sha256.update(Math.random().toString());
+    sha256.update(value);
     return sha256.digest('hex');
   }
 }

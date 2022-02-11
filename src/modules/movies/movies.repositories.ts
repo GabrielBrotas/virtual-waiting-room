@@ -1,57 +1,62 @@
+/* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs'
-import * as path from 'path'
+import * as fs from 'fs';
+import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class MoviesRepository {
-    // constructor() {}
+  // constructor() {}
 
-    private getDB(all = false): Array<Record<string, any>> {
-        const db = fs.readFileSync(path.join(__dirname, '..', '..', 'db.json'), {encoding: 'utf-8'})
-        
-        return all ? JSON.parse(db) : JSON.parse(db).movies || []
-    }
+  private getDB(all = false): Array<Record<string, any>> {
+    const db = fs.readFileSync(path.join(__dirname, '..', '..', 'db.json'), {
+      encoding: 'utf-8',
+    });
 
-    private replaceData(newData) {
-        const db = this.getDB(true)
+    return all ? JSON.parse(db) : JSON.parse(db).movies || [];
+  }
 
-        fs.writeFileSync(path.join(__dirname, '..', '..', 'db.json'), JSON.stringify({...db, movies: newData}))
-    }
+  private replaceData(newData) {
+    const db = this.getDB(true);
 
-    async getAll() {
-        const db = this.getDB()
-        return db
-    }
+    fs.writeFileSync(
+      path.join(__dirname, '..', '..', 'db.json'),
+      JSON.stringify({ ...db, movies: newData }),
+    );
+  }
 
-    async findByIdOrName(value: string) {
-        const db = this.getDB()
+  async getAll() {
+    const db = this.getDB();
+    return db;
+  }
 
-        const movie = db.find((movie) => movie._id == value || movie.name == value);
+  async findByIdOrName(value: string) {
+    const db = this.getDB();
 
-        if (!movie) return null
+    const movie = db.find((movie) => movie._id == value || movie.name == value);
 
-        return movie
-    }
+    if (!movie) return null;
 
-    async create({ name, start_time }) {
-        const db = this.getDB()
+    return movie;
+  }
 
-        const exists = await this.findByIdOrName(name)
+  async create({ name, start_time }) {
+    const db = this.getDB();
 
-        if(exists) throw `Room ${name} already exists`
-        
-        const movie = {
-            _id: uuidv4(),
-            name,
-            start_time
-        };
+    const exists = await this.findByIdOrName(name);
 
-        db.push(movie);
-        
-        this.replaceData(db)
+    if (exists) throw `Room ${name} already exists`;
 
-        return movie
-    }
+    const movie = {
+      _id: uuidv4(),
+      name,
+      start_time,
+    };
 
+    db.push(movie);
+
+    this.replaceData(db);
+
+    return movie;
+  }
 }
