@@ -14,7 +14,7 @@ export class AuthProvider {
 
   async generateToken(userId: string): Promise<string> {
     return jwt.sign({ sub: userId }, process.env.JWT_SECRET_KEY, {
-      expiresIn: '10h',
+      expiresIn: '10d',
     });
   }
 }

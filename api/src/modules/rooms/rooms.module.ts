@@ -11,10 +11,17 @@ import { EnsureAuth } from '../../shared/auth/ensureAuth';
 import { SessionRepository } from './repositories/session.repository';
 import { MoviesModule } from '../movies/movies.module';
 import { TokenProvider } from './../../shared/token/token-provider';
+import { VirtualRoomGateway } from './rooms.gateway';
 
 @Module({
   controllers: [RoomsController],
-  providers: [RoomsService, SessionRepository, RoomsRepository, TokenProvider],
+  providers: [
+    RoomsService,
+    SessionRepository,
+    RoomsRepository,
+    TokenProvider,
+    VirtualRoomGateway,
+  ],
   imports: [MoviesModule],
 })
 export class RoomsModule implements NestModule {
