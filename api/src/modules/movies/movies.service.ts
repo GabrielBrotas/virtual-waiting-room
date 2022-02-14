@@ -14,9 +14,9 @@ export class MoviesService {
     };
   }
 
-  async create({ name, start_time }) {
+  async create({ name }) {
     try {
-      const room = await this.moviesRepository.create({ name, start_time });
+      const room = await this.moviesRepository.create({ name });
 
       return {
         success: true,

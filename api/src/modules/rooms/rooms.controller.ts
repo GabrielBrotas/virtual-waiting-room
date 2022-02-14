@@ -32,7 +32,7 @@ export class RoomsController {
 
   @Post('/movie')
   createSession(@Body() { movie_id, start_time, room_id }: AddMovieToRoomDto) {
-    return this.roomsService.addMovie({ movie_id, room_id, start_time });
+    return this.roomsService.createSession({ movie_id, room_id, start_time });
   }
 
   @Get('/movie/:SessionID')
@@ -43,7 +43,7 @@ export class RoomsController {
   @Post('/movie/:SessionID')
   buyTicket(@Param() { SessionID }, @Req() req) {
     return this.roomsService.buyTicket({
-      buyer_id: req.user._id,
+      buyer_id: req.user.id,
       session_id: SessionID,
     });
   }
