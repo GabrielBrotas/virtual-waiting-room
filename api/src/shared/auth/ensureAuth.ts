@@ -17,7 +17,7 @@ export class EnsureAuth implements NestMiddleware {
         const { sub } = decoded;
         
         (req as any).user = {
-            _id: sub,
+          id: sub,
         };
 
         return next();

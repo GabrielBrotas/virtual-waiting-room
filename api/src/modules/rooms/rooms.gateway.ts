@@ -34,7 +34,7 @@ export class VirtualRoomGateway {
   @SubscribeMessage('buy-ticket')
   async buyTicket(client, { session_id, buyer_id }) {
     const redis = await getRedisClient();
-    const current_ticket = await redis.get(`main_room:${session_id}`);
+    const current_ticket = await redis.get(`main_room:${String(session_id)}`);
     const user_ticket = this.tokenProvider.generateShaToken(buyer_id);
 
     if (current_ticket != user_ticket) {
@@ -64,6 +64,7 @@ export class VirtualRoomGateway {
       user_id: buyer_id,
       session_id,
     });
+
     await this.moveWaitingRoom(session_id);
 
     client.emit('buy-ticket', {
@@ -73,9 +74,8 @@ export class VirtualRoomGateway {
   }
 
   @SubscribeMessage('get-main-room')
-  async handleEvent(client, data) {
-    console.log({ data });
-    if (!data.session_id) {
+  async handleEvent(client, {session_id}) {
+    if (!session_id) {
       client.emit('main-room', {
         success: false,
         error: 'session_id required',
@@ -85,7 +85,7 @@ export class VirtualRoomGateway {
 
     const redis = await getRedisClient();
 
-    const ticket = await redis.get(`main_room:${data.session_id}`);
+    const ticket = await redis.get(`main_room:${String(session_id)}`);
 
     client.emit('main-room', {
       success: true,
@@ -112,10 +112,10 @@ export class VirtualRoomGateway {
     const session = await this.sessionRepository.findById(session_id);
 
     const waiting_room = await redis
-      .get(`waiting_room:${session_id}`)
+      .get(`waiting_room:${String(session_id)}`)
       .then((res) => (res ? JSON.parse(res) : []));
 
-    const room = await redis.get(`main_room:${session_id}`);
+    const room = await redis.get(`main_room:${String(session_id)}`);
 
     // check if the user is in the session room
     if (room == ticket) {
@@ -133,10 +133,10 @@ export class VirtualRoomGateway {
 
     if (emptySeats <= 0) {
       console.log('out of seats');
-
       client.emit('add-to-main-room', {
         success: false,
         error: 'out of seats',
+        ticket
       });
       return;
     }
@@ -144,10 +144,10 @@ export class VirtualRoomGateway {
     // check if has enought seat
     if (emptySeats - waiting_room.length <= 0) {
       console.log('waiting room full');
-
       client.emit('add-to-main-room', {
         success: false,
         error: 'waiting room full',
+        ticket
       });
       return;
     }
@@ -165,6 +165,7 @@ export class VirtualRoomGateway {
         console.log(err);
         client.emit('add-to-main-room', {
           success: false,
+          ticket,
           error: err.message,
         });
         return;
@@ -172,9 +173,8 @@ export class VirtualRoomGateway {
     }
 
     // save the new room in redis
-    await redis.set(`main_room:${session_id}`, ticket);
+    await redis.set(`main_room:${String(session_id)}`, ticket);
 
-    console.log('added to main room');
     client.emit('add-to-main-room', {
       success: true,
       ticket,
@@ -188,7 +188,6 @@ export class VirtualRoomGateway {
 
   @SubscribeMessage('remove-from-waiting-room')
   async removeFromWaitingRoom(client, { user_id, session_id }) {
-    console.log('remove this fck guy from waiting room');
     const redis = await getRedisClient();
     if (!user_id || !session_id) {
       console.log('user id and session id needed');
@@ -201,7 +200,7 @@ export class VirtualRoomGateway {
 
     const ticket = this.tokenProvider.generateShaToken(user_id);
 
-    const waiting_room = await redis.get(`waiting_room:${session_id}`);
+    const waiting_room = await redis.get(`waiting_room:${String(session_id)}`);
 
     if (!waiting_room) {
       console.log('Waiting room empty');
@@ -210,11 +209,14 @@ export class VirtualRoomGateway {
 
     const tickets = JSON.parse(waiting_room).filter((t) => t !== ticket);
 
-    await redis.set(`waiting_room:${session_id}`, JSON.stringify(tickets));
+    await redis.set(`waiting_room:${String(session_id)}`, JSON.stringify(tickets));
     console.log('removed');
 
-    this.server.emit(`update-room:${session_id}`, {
+    this.server.emit(`update-room:${String(session_id)}`, {
       success: true,
+      mainRoom: false,
+      newWaitingRoom: tickets,
+      whoLeft: ticket
     });
   }
 
@@ -225,10 +227,10 @@ export class VirtualRoomGateway {
     const ticket = this.tokenProvider.generateShaToken(user_id);
     const session = await this.sessionRepository.findById(session_id);
 
-    const mainRoom = await redis.get(`main_room:${session_id}`);
+    const mainRoom = await redis.get(`main_room:${String(session_id)}`);
 
     const waiting_room = await redis
-      .get(`waiting_room:${session_id}`)
+      .get(`waiting_room:${String(session_id)}`)
       .then((res) => (res ? JSON.parse(res) : []));
 
     // check if are in the main room
@@ -283,10 +285,10 @@ export class VirtualRoomGateway {
 
     const ticket = this.tokenProvider.generateShaToken(user_id);
 
-    const room = await redis.get(`main_room:${session_id}`);
+    const room = await redis.get(`main_room:${String(session_id)}`);
 
     const waiting_room = await redis
-      .get(`waiting_room:${session_id}`)
+      .get(`waiting_room:${String(session_id)}`)
       .then((res) => (res ? JSON.parse(res) : []));
 
     if (!room) {
@@ -295,6 +297,7 @@ export class VirtualRoomGateway {
       client.emit('remove-from-main-room', {
         success: false,
         error: 'room not found',
+        ticket,
       });
       return;
     }
@@ -304,27 +307,29 @@ export class VirtualRoomGateway {
       client.emit('remove-from-main-room', {
         success: false,
         error: 'user not in room',
+        ticket,
       });
       return;
     }
 
-    await redis.del(`main_room:${session_id}`);
+    await redis.del(`main_room:${String(session_id)}`);
 
     const nextTicket = waiting_room[0];
 
     if (waiting_room.length > 0) {
-      await redis.set(`main_room:${session_id}`, nextTicket);
+      await redis.set(`main_room:${String(session_id)}`, nextTicket);
 
       await redis.set(
-        `waiting_room:${session_id}`,
+        `waiting_room:${String(session_id)}`,
         JSON.stringify(waiting_room.slice(1)),
       );
     }
 
-    this.server.emit(`update-room:${session_id}`, {
+    this.server.emit(`update-room:${String(session_id)}`, {
       success: true,
       whoLeft: ticket,
       nextTicket,
+      mainRoom: true
     });
 
     return;
@@ -334,7 +339,7 @@ export class VirtualRoomGateway {
     const redis = await getRedisClient();
 
     const waiting_room = await redis
-      .get(`waiting_room:${session_id}`)
+      .get(`waiting_room:${String(session_id)}`)
       .then((res) => (res ? JSON.parse(res) : []));
 
     if (!waiting_room.length) {
@@ -342,10 +347,10 @@ export class VirtualRoomGateway {
       return;
     }
 
-    await redis.set(`main_room:${session_id}`, waiting_room[0]);
+    await redis.set(`main_room:${String(session_id)}`, waiting_room[0]);
 
     await redis.set(
-      `waiting_room:${session_id}`,
+      `waiting_room:${String(session_id)}`,
       JSON.stringify(waiting_room.slice(1)),
     );
 

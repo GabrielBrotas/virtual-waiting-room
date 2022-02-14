@@ -9,12 +9,12 @@ export class UsersService {
     private readonly usersRepository: UsersRepository,
   ) {}
 
-  getUser(id: string) {
-    const user = this.usersRepository.findById(id);
+  async getUser(id: number) {
+    const user = await this.usersRepository.findById(id);
 
     if (!user) throw new BadRequestException('User not found');
 
-    delete user.password;
+    delete (user as any).password;
 
     return {
       success: true,
@@ -39,26 +39,27 @@ export class UsersService {
 
   async login({ email, password }) {
     const user = await this.usersRepository.findByEmail(email);
+
     if (!user) {
       throw new BadRequestException('User not found');
     }
 
     const passwordMatch = await this.authProvider.compareEncrypt(
       password,
-      user.password,
+      (user as any).password,
     );
 
     if (!passwordMatch) {
       throw new BadRequestException('email/password wrong');
     }
 
-    delete user.password;
+    delete (user as any).password;
 
     return {
       success: true,
       data: {
         user,
-        token: await this.authProvider.generateToken(user._id),
+        token: await this.authProvider.generateToken(String(user.id)),
       },
     };
   }

@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://admin:admin@localhost:5432/DATABASE?schema=virtualroom"
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  email    String   @unique
+  name     String?
+  password String
+
+  tickets   Ticket[]
+}
+
+model Movie {
+  id      Int       @id @default(autoincrement())
+  name    String
+  Session Session[]
+}
+
+model Room {
+  id      Int       @id @default(autoincrement())
+  number  Int
+  seats   Int
+  Session Session[]
+}
+
+model Ticket {
+  id        Int     @id @default(autoincrement())
+  buyerId   Int
+  sessionId Int
+  Session   Session @relation(fields: [sessionId], references: [id])
+  User      User    @relation(fields: [buyerId], references: [id])
+}
+
+model Session {
+  id Int @id @default(autoincrement())
+
+  start_time DateTime
+
+  tickets Ticket[]
+  movie   Movie    @relation(fields: [movieId], references: [id])
+  room    Room     @relation(fields: [roomId], references: [id])
+
+  movieId Int
+  roomId  Int
+}

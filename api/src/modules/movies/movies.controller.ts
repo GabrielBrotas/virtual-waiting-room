@@ -12,7 +12,7 @@ export class MoviesController {
   }
 
   @Post('/')
-  create(@Body() { name, start_time }: CreateMovieDto) {
-    return this.moviesService.create({ name, start_time });
+  create(@Body() { name }: CreateMovieDto) {
+    return this.moviesService.create({ name });
   }
 }

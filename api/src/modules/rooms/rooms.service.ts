@@ -35,7 +35,7 @@ export class RoomsService {
   }
 
   async findOne(id) {
-    const room = await this.roomsRepository.findByIdOrNumber(id);
+    const room = await this.roomsRepository.findByNumber(id);
 
     if (!room) {
       throw new BadRequestException('Room does not exists');
@@ -47,7 +47,7 @@ export class RoomsService {
     };
   }
 
-  async addMovie({ room_id, movie_id, start_time }) {
+  async createSession({ room_id, movie_id, start_time }) {
     try {
       const session = await this.sessionRepository.create({
         room_id,
@@ -85,9 +85,6 @@ export class RoomsService {
         session_id,
       });
 
-      // await this.removeFromRoom({ user_id: buyer_id, session_id });
-      // await this.moveWaitingRoom(session_id);
-
       return {
         success: true,
         session: new_session,
@@ -101,7 +98,7 @@ export class RoomsService {
     const session = await this.sessionRepository.findById(session_id);
 
     if (!session) {
-      throw new BadRequestException('Room does not exists');
+      throw new BadRequestException('Session does not exists');
     }
 
     return {

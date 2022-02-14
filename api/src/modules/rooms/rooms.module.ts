@@ -12,6 +12,7 @@ import { SessionRepository } from './repositories/session.repository';
 import { MoviesModule } from '../movies/movies.module';
 import { TokenProvider } from './../../shared/token/token-provider';
 import { VirtualRoomGateway } from './rooms.gateway';
+import { PrismaService } from 'src/services/prisma.service';
 
 @Module({
   controllers: [RoomsController],
@@ -21,6 +22,7 @@ import { VirtualRoomGateway } from './rooms.gateway';
     RoomsRepository,
     TokenProvider,
     VirtualRoomGateway,
+    PrismaService
   ],
   imports: [MoviesModule],
 })

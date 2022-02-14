@@ -1,12 +1,12 @@
-import { IsNotEmpty, IsString, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsDateString } from 'class-validator';
 
 export class AddMovieToRoomDto {
   @IsNotEmpty()
-  @IsString()
+  @IsNumber()
   movie_id: String
 
   @IsNotEmpty()
-  @IsString()
+  @IsNumber()
   room_id: String
 
   @IsNotEmpty()

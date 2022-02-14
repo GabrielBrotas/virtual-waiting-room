@@ -19,7 +19,7 @@ function useSocket(url) {
 
     setSocket(socketIo)
 
-    socketIo.emit('add-to-main-room', { user_id: cookie.user.user._id, session_id })
+    socketIo.emit('add-to-main-room', { user_id: cookie.user.user.id, session_id })
 
     // return () => {
     //     socketIo.disconnect()
@@ -38,9 +38,7 @@ export default function Session() {
     
     const socket = useSocket(`http://localhost:4000`)
     
-    
     const [session, setSession] = useState()
-    
 
     const [virtualRoom, setVirtualRoom] = useState({
         main: false,
@@ -57,7 +55,7 @@ export default function Session() {
         if(!session_id) return
 
         socket.emit('buy-ticket', {
-            buyer_id: cookie.user.user._id,
+            buyer_id: cookie.user.user.id,
             session_id
         })
     }
@@ -78,26 +76,16 @@ export default function Session() {
         }
     }, [cookie, router])
 
-
-    // useEffect(() => {
-    //     if(!socket) return
-    //     if(!cookie.user) return
-    //     if(!session_id) return
-    //     const { _id: user_id } = cookie.user.user
-
-    //     // socket.emit('add-to-main-room', { user_id, session_id })
-
-    // }, [cookie.user, session_id, socket])
-    console.log(virtualRoom)
     useEffect(() => {
         if(!socket) return
         if(!cookie.user) return
         if(!session_id) return
-
-        const { _id: user_id } = cookie.user.user
-
-
+        
+        const { id: user_id } = cookie.user.user
+        
+        
         socket.on('add-to-main-room', ({success, ticket, data, error}) => {
+            console.log('yoooo', {success, ticket, data, error})
             if(success) {
                 if(ticket) {
                     setVirtualRoom({
@@ -109,7 +97,7 @@ export default function Session() {
                     })
                     return
                 }
-
+                
                 if (data.isWaitingRoom) {
                     setVirtualRoom({
                         main: false,
@@ -120,64 +108,78 @@ export default function Session() {
                     })
                     return
                 }
-
+                
             } else {
                 console.log({data, error, ticket})
-                setVirtualRoom({
+                setVirtualRoom((prev) => ({
+                    ...prev,
                     main: false,
                     waitingRoom: false,
                     queuePosition: 0,
                     error: error,
-                    loading: false
-                })
+                    loading: false,
+                    ticket
+                }))
             }
         })
-
+        
         socket.on('buy-ticket', ({success, data}) => {
             if(success) {
                 console.log({data})
                 
-                alert('Bought successfully')
+                // alert('Bought successfully')
                 router.push('/rooms')
             }
         })
+                
+        socket.on(`update-room:${session_id}`, ({whoLeft, success, nextTicket, mainRoom, newWaitingRoom}) => {
+            if(virtualRoom.loading) return
 
-        // socket.on('move-waiting-room', ({data}) => {
-        //     if(data.session_id && data.session_id == session_id) {
-        //         socket.emit('add-to-main-room', { user_id, session_id })
-        //     }
-        // })
-
-        socket.on(`update-room:${session_id}`, ({whoLeft, success, nextTicket}) => {
-            
-            console.log({whoLeft, success, nextTicket, myTicket: virtualRoom.ticket});
-
-            if(success && whoLeft && virtualRoom.ticket !== whoLeft) {
-                if(nextTicket == virtualRoom.ticket) {
-                    setVirtualRoom({
-                        main: true,
-                        waitingRoom: false,
-                        queuePosition: 0,
-                        loading: false,
-                        ticket: nextTicket
-                    })
-                } else {
-                    setVirtualRoom({
-                        main: false,
-                        waitingRoom: true,
-                        queuePosition: virtualRoom.queuePosition - 1,
-                        loading: false,
-                        ticket: virtualRoom.ticket
-                    })
+            console.log({whoLeft, success, nextTicket, virtualRoom, mainRoom, newWaitingRoom});
+            if(mainRoom) {
+                console.log('maiin')
+                if(success && whoLeft && virtualRoom.ticket !== whoLeft) {
+                    if(nextTicket == virtualRoom.ticket) {
+                        setVirtualRoom((prev) => ({
+                            ...prev,
+                            main: true,
+                            waitingRoom: false,
+                            queuePosition: 0,
+                            loading: false,
+                        }))
+                    } else {
+                        setVirtualRoom((prev) => ({
+                            ...prev,
+                            main: false,
+                            waitingRoom: true,
+                            queuePosition: virtualRoom.queuePosition - 1,
+                            loading: false,
+                        }))
+                    }
                 }
+                return
+            } 
+            
+            if (!virtualRoom.main) {
+                if(success && whoLeft && virtualRoom.ticket !== whoLeft) {
+                    if(whoLeft != virtualRoom.ticket) {
+                        setVirtualRoom((prev) => ({
+                            ...prev,
+                            main: false,
+                            waitingRoom: true,
+                            queuePosition: newWaitingRoom.length == 0 ? 1 : newWaitingRoom.findIndex((t) => t == virtualRoom.ticket) + 1,
+                            loading: false,
+                        }))
+                    }
+                }
+                return
             }
-            // socket.emit('add-to-main-room', { user_id, session_id })
         })
-
+        
         socket.on('disconnect', () => {
             console.log('disconnected')
         })
-
+                
         router.beforePopState(() => {
             if(virtualRoom.main) {
                 console.log(`remove main => ${user_id} => ${session_id}`)
@@ -185,47 +187,31 @@ export default function Session() {
                 socket.disconnect()
                 return true
             } 
-
+            
             if(virtualRoom.waitingRoom) {
                 console.log('remove from waiting')
-
+                
                 socket.emit('remove-from-waiting-room', { user_id, session_id })
                 socket.disconnect()
                 return true
             }
-      
+            
             return true
         })
-        
-        // return () => {
-        //     if(virtualRoom.main) {
-        //         console.log(`remove main => ${user_id} => ${session_id}`)
-        //         socket.emit('remove-from-main-room', { user_id, session_id })
-        //         socket.disconnect()
-        //         return
-        //     } 
-
-        //     if(virtualRoom.waitingRoom) {
-        //         console.log('remove from waiting')
-
-        //         socket.emit('remove-from-waiting-room', { user_id, session_id })
-        //         socket.disconnect()
-        //         return
-        //     }
-        // }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+                
     }, [
         // cookie?.user?.user, 
         // session_id, 
         socket, 
         virtualRoom, 
     ])
+    
+    console.log({virtualRoom})
 
     if(!session) return <></>
-
+    
     return (
-    <div className={styles.container}>
+        <div className={styles.container}>
         <h1>Session</h1>
 
         <div>
@@ -249,7 +235,7 @@ export default function Session() {
             <span>{virtualRoom.error}</span>
         ) : (
             <button onClick={() => {
-                socket.emit('add-to-main-room', { user_id: cookie.user.user._id, session_id })
+                socket.emit('add-to-main-room', { user_id: cookie.user.user.id, session_id })
             }}>Refresh</button>
         )}
             

@@ -4,7 +4,4 @@ export class CreateMovieDto {
     @IsNotEmpty()
     @IsString()
     name: String
-
-    @IsDateString()
-    start_time: String
 }

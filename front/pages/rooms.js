@@ -44,7 +44,7 @@ export default function Rooms() {
       <p>Auth User:</p>
       <pre>{JSON.stringify(cookie?.user?.user, null, 2)}</pre>
       {rooms.map(room => (
-        <div key={room._id} 
+        <div key={room.id} 
           style={{
             border: '1px solid', 
             borderRadius: 10, 
@@ -64,8 +64,8 @@ export default function Rooms() {
               justifyContent: 'space-between',
               marginTop: 50,
             }}>
-              {room.sessions.map(session => (
-                <div key={session._id}
+              {room.Session.map(session => (
+                <div key={session.id}
                   style={{
                     border: '1px solid',
                     padding: 10,
@@ -75,7 +75,7 @@ export default function Rooms() {
                     flexDirection: 'column'
                   }}
                 >
-                  <span>{session._id}</span>
+                  <span>{session.id}</span>
                   <strong>{session.movie.name}</strong>
 
                   <div style={{marginTop: 10}}>
@@ -83,7 +83,7 @@ export default function Rooms() {
                   </div>
                   <p>{session.start_time}</p>
 
-                  <button onClick={() => handleNavigateToSession(session._id)} style={{width: '100%'}}>
+                  <button onClick={() => handleNavigateToSession(session.id)} style={{width: '100%'}}>
                     Buy Ticket
                   </button>
 

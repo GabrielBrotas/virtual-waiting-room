@@ -1,80 +1,68 @@
 /* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import { SessionRepository } from './session.repository';
+import { PrismaService } from 'src/services/prisma.service';
 
 @Injectable()
 export class RoomsRepository {
-  constructor(private readonly sessionsRespository: SessionRepository) {}
-
-  private getDB(all = false): Array<Record<string, any>> {
-    const db = fs.readFileSync(
-      path.join(__dirname, '..', '..', '..', 'db.json'),
-      { encoding: 'utf-8' },
-    );
-
-    return all ? JSON.parse(db) : JSON.parse(db).rooms || [];
-  }
-
-  private replaceData(newData) {
-    const db = this.getDB(true);
-
-    fs.writeFileSync(
-      path.join(__dirname, '..', '..', '..', 'db.json'),
-      JSON.stringify({ ...db, rooms: newData }),
-    );
-  }
+  constructor(
+    private prisma: PrismaService  
+  ) {}
 
   async getAll() {
-    const db = this.getDB();
 
-    for (let i = 0; i <= db.length - 1; i++) {
-      const sessions = await this.sessionsRespository.findAllByRoomId(
-        db[i]._id,
-      );
-      db[i] = {
-        ...db[i],
-        sessions,
-      };
-    }
+    const rooms = await this.prisma.room.findMany({
+      include: {
+        Session: {
+          include: {
+            movie: true,
+            tickets: true
 
-    return db;
+          }
+        }
+      }
+    })
+
+    return rooms;
   }
 
-  async findByIdOrNumber(value: string | number) {
-    const db = this.getDB();
+  async findByNumber(value: number) {
 
-    const room = db.find(
-      (room) => room._id == value || Number(room.number) == Number(value),
-    );
+    const room = await this.prisma.room.findFirst({
+      where: {
+        number: Number(value)
+      },
+      include: {
+        Session: {
+          include: {
+            movie: true,
+            tickets: true
+          }
+        }
+      }
+    })
 
     if (!room) return null;
-
-    const sessions = await this.sessionsRespository.findAllByRoomId(room._id);
-
-    room.sessions = sessions;
 
     return room;
   }
 
   async create({ number, seats }) {
-    const db = this.getDB();
 
-    const exists = await this.findByIdOrNumber(number);
+    const exists = await this.findByNumber(number);
 
     if (exists) throw 'Number room already exists';
 
     const room = {
-      _id: uuidv4(),
       number,
       seats,
     };
 
-    db.push(room);
-
-    this.replaceData(db);
+    await this.prisma.room.create({
+      data: {
+        number,
+        seats
+      }
+    })
 
     return room;
   }
